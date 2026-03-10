@@ -3,22 +3,28 @@ import { View, Text, TextInput, Button, FlatList, Alert, StyleSheet, SafeAreaVie
 import { useFocusEffect } from 'expo-router';
 import {
   initDb,
+  getEstudiantes,
+  addEstudiante,
+  updateEstudiante,
+  deleteEstudiante,
   getProgramas,
-  addPrograma,
-  updatePrograma,
-  deletePrograma,
 } from '../../src/db';
 
-export default function ProgramasScreen() {
+import { Picker } from '@react-native-picker/picker';
+
+export default function EstudiantesScreen() {
   const [dbReady, setDbReady] = useState(false);
+  const [estudiantes, setEstudiantes] = useState([]);
   const [programas, setProgramas] = useState([]);
-  const [filteredProgramas, setFilteredProgramas] = useState([]);
+  const [filteredEstudiantes, setFilteredEstudiantes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Programas Form
-  const [progCod, setProgCod] = useState('');
-  const [progNombre, setProgNombre] = useState('');
-  const [editingProg, setEditingProg] = useState(false);
+  // Estudiantes Form
+  const [estCod, setEstCod] = useState('');
+  const [estNombre, setEstNombre] = useState('');
+  const [estEmail, setEstEmail] = useState('');
+  const [estProgCod, setEstProgCod] = useState('');
+  const [editingEst, setEditingEst] = useState(false);
 
   useEffect(() => {
     setupDb();
@@ -44,21 +50,28 @@ export default function ProgramasScreen() {
     try {
       const progs = await getProgramas();
       setProgramas(progs);
-      filterList(searchQuery, progs);
+      const ests = await getEstudiantes();
+      setEstudiantes(ests);
+      filterList(searchQuery, ests);
+      
+      // Select first program by default if available and not set
+      if (progs.length > 0 && !estProgCod) {
+        setEstProgCod(progs[0].cod);
+      }
     } catch (e) {
       console.log(e);
     }
   };
 
-  const filterList = (query, currentData = programas) => {
+  const filterList = (query, currentData = estudiantes) => {
     if (!query) {
-      setFilteredProgramas(currentData);
+      setFilteredEstudiantes(currentData);
     } else {
       const lowerQ = query.toLowerCase();
       const filtered = currentData.filter(
-        p => p.cod.toLowerCase().includes(lowerQ) || p.nombre.toLowerCase().includes(lowerQ)
+        e => e.cod.toLowerCase().includes(lowerQ) || e.nombre.toLowerCase().includes(lowerQ)
       );
-      setFilteredProgramas(filtered);
+      setFilteredEstudiantes(filtered);
     }
   };
 
@@ -67,51 +80,51 @@ export default function ProgramasScreen() {
     filterList(text);
   };
 
-  const handleSavePrograma = async () => {
+  const handleSaveEstudiante = async () => {
     try {
-      if (!progCod || !progNombre) {
-        Alert.alert('Error', 'Llene todos los campos de programa');
+      if (!estCod || !estNombre || !estEmail || (!editingEst && !estProgCod)) {
+        Alert.alert('Error', 'Llene todos los campos de estudiante');
         return;
       }
-      if (editingProg) {
-        await updatePrograma(progCod, progNombre);
-        Alert.alert('Éxito', 'Programa actualizado');
+      if (editingEst) {
+        // Update ONLY allows modifying name and email
+        await updateEstudiante(estCod, estNombre, estEmail);
+        Alert.alert('Éxito', 'Estudiante actualizado');
       } else {
-        await addPrograma(progCod, progNombre);
-        Alert.alert('Éxito', 'Programa guardado');
+        await addEstudiante(estCod, estNombre, estEmail, estProgCod);
+        Alert.alert('Éxito', 'Estudiante guardado');
       }
-      clearProgForm();
+      clearEstForm();
       loadData();
     } catch (e) {
       Alert.alert('Error', e.message);
     }
   };
 
-  const handleEditProg = (prog) => {
-    setProgCod(prog.cod);
-    setProgNombre(prog.nombre);
-    setEditingProg(true);
+  const handleEditEst = (est) => {
+    setEstCod(est.cod);
+    setEstNombre(est.nombre);
+    setEstEmail(est.email);
+    setEstProgCod(est.Programa_cod);
+    setEditingEst(true);
   };
 
-  const handleDeleteProg = async (cod) => {
+  const handleDeleteEst = async (cod) => {
     try {
-      await deletePrograma(cod);
-      Alert.alert('Éxito', 'Programa eliminado');
+      await deleteEstudiante(cod);
+      Alert.alert('Éxito', 'Estudiante eliminado');
       loadData();
     } catch (e) {
-      // Show specific user message for standard constraint violation error
-      if (e.message.includes('No se puede eliminar el programa porque tiene estudiantes asociados')) {
-         Alert.alert('Error', 'No se puede eliminar un programa con estudiantes inscritos');
-      } else {
-         Alert.alert('Error', e.message);
-      }
+      Alert.alert('Error', e.message);
     }
   };
 
-  const clearProgForm = () => {
-    setProgCod('');
-    setProgNombre('');
-    setEditingProg(false);
+  const clearEstForm = () => {
+    setEstCod('');
+    setEstNombre('');
+    setEstEmail('');
+    setEstProgCod('');
+    setEditingEst(false);
   };
 
   if (!dbReady) {
@@ -126,13 +139,14 @@ export default function ProgramasScreen() {
     <View style={styles.listItem}>
       <View style={styles.listTextContainer}>
         <Text style={styles.listTitle}>{item.nombre}</Text>
-        <Text style={styles.listSub}>Cód: {item.cod}</Text>
+        <Text style={styles.listSub}>Cód: {item.cod} | Prog: {item.Programa_cod}</Text>
+        <Text style={styles.listSub}>{item.email}</Text>
       </View>
       <View style={styles.row}>
-        <TouchableOpacity onPress={() => handleEditProg(item)} style={styles.actionBtn}>
+        <TouchableOpacity onPress={() => handleEditEst(item)} style={styles.actionBtn}>
           <Text style={styles.editBtnText}>✏️ Modificar</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDeleteProg(item.cod)} style={styles.actionBtn}>
+        <TouchableOpacity onPress={() => handleDeleteEst(item.cod)} style={styles.actionBtn}>
           <Text style={styles.deleteBtnText}>🗑️ Eliminar</Text>
         </TouchableOpacity>
       </View>
@@ -142,28 +156,50 @@ export default function ProgramasScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.header}>Gestión de Programas</Text>
+        <Text style={styles.header}>Gestión de Estudiantes</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{editingProg ? 'Modificar Programa' : 'Crear Programa'}</Text>
+          <Text style={styles.cardTitle}>{editingEst ? 'Modificar Estudiante' : 'Crear Estudiante'}</Text>
           <TextInput
-            style={[styles.input, editingProg && styles.disabledInput]}
+            style={[styles.input, editingEst && styles.disabledInput]}
             placeholder="Código (Max 4 chars)"
-            value={progCod}
-            onChangeText={setProgCod}
-            editable={!editingProg} 
+            value={estCod}
+            onChangeText={setEstCod}
+            editable={!editingEst} // Update ONLY allows modifying name and email
             maxLength={4}
           />
           <TextInput
             style={styles.input}
             placeholder="Nombre (Max 30 chars)"
-            value={progNombre}
-            onChangeText={setProgNombre}
+            value={estNombre}
+            onChangeText={setEstNombre}
             maxLength={30}
           />
+          <TextInput
+            style={styles.input}
+            placeholder="Email (Max 100 chars)"
+            value={estEmail}
+            onChangeText={setEstEmail}
+            keyboardType="email-address"
+            maxLength={100}
+          />
+          {!editingEst && (
+            <View style={styles.pickerContainer}>
+              <Text style={styles.pickerLabel}>Programa:</Text>
+              <Picker
+                selectedValue={estProgCod}
+                onValueChange={(itemValue) => setEstProgCod(itemValue)}
+                style={styles.picker}
+              >
+                {programas.map(p => (
+                   <Picker.Item key={p.cod} label={`${p.nombre} (${p.cod})`} value={p.cod} />
+                ))}
+              </Picker>
+            </View>
+          )}
           <View style={styles.formRow}>
-            <Button title={editingProg ? "Guardar Cambios" : "Crear"} onPress={handleSavePrograma} disabled={!progCod || !progNombre} />
-            {editingProg && <Button title="Cancelar" color="red" onPress={clearProgForm} />}
+            <Button title={editingEst ? "Guardar Cambios" : "Crear"} onPress={handleSaveEstudiante} disabled={!estCod || !estNombre || !estEmail} />
+            {editingEst && <Button title="Cancelar" color="red" onPress={clearEstForm} />}
           </View>
         </View>
 
@@ -175,10 +211,10 @@ export default function ProgramasScreen() {
         />
 
         <FlatList
-          data={filteredProgramas}
+          data={filteredEstudiantes}
           keyExtractor={(item) => item.cod}
           renderItem={renderItem}
-          ListEmptyComponent={<Text style={styles.emptyText}>No hay programas registrados</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>No hay estudiantes registrados</Text>}
           contentContainerStyle={styles.listContainer}
         />
       </View>
@@ -213,6 +249,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   disabledInput: { backgroundColor: '#f0f0f0', color: '#999' },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  pickerLabel: {
+    fontSize: 12,
+    color: '#666',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+  },
   searchBar: {
     borderWidth: 1,
     borderColor: '#ddd',
