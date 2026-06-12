@@ -18,8 +18,8 @@ export default function ProgramasScreen() {
   // ESTADOS GLOBALES Y BÚSQUEDA
   // ==========================================
   const [dbReady, setDbReady] = useState(false);
-  const [programas, setProgramas] = useState([]);
-  const [filteredProgramas, setFilteredProgramas] = useState([]);
+  const [programas, setProgramas] = useState<any[]>([]);
+  const [filteredProgramas, setFilteredProgramas] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // ==========================================
@@ -63,7 +63,7 @@ export default function ProgramasScreen() {
     }
   };
 
-  const filterList = (query, currentData = programas) => {
+  const filterList = (query: string, currentData = programas) => {
     if (!query) {
       setFilteredProgramas(currentData);
     } else {
@@ -75,7 +75,7 @@ export default function ProgramasScreen() {
     }
   };
 
-  const handleSearch = (text) => {
+  const handleSearch = (text: string) => {
     setSearchQuery(text);
     filterList(text);
   };
@@ -98,7 +98,7 @@ export default function ProgramasScreen() {
       }
       clearProgForm();
       loadData();
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Error', e.message);
     }
   };
@@ -120,7 +120,7 @@ export default function ProgramasScreen() {
       await deletePrograma(cod);
       Alert.alert('Éxito', 'Programa eliminado');
       loadData();
-    } catch (e) {
+    } catch (e: any) {
       if (e.message.includes('No se puede eliminar el programa porque tiene estudiantes asociados')) {
          Alert.alert('Error', 'No se puede eliminar un programa con estudiantes inscritos');
       } else {
@@ -147,19 +147,24 @@ export default function ProgramasScreen() {
   // ==========================================
   // COMPONENTES DE RENDERIZADO
   // ==========================================
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={styles.listItem} 
+      // Al tocar un programa, navega hacia la pantalla de sus estudiantes pasándole el código
       onPress={() => router.push(`/estudiantes/${item.cod}`)}
     >
       <View style={styles.listTextContainer}>
+        {/* Título negro del programa */}
         <Text style={styles.listTitle}>{item.nombre}</Text>
+        {/* Texto gris pequeño con el id */}
         <Text style={styles.listSub}>Cód: {item.cod}</Text>
       </View>
       <View style={styles.row}>
+        {/* Botón azul de Editar */}
         <TouchableOpacity onPress={() => handleEditProg(item)} style={styles.actionBtn}>
           <Ionicons name="pencil" size={20} color="#0066cc" />
         </TouchableOpacity>
+        {/* Botón rojo de Borrar */}
         <TouchableOpacity onPress={() => handleDeleteProg(item.cod)} style={styles.actionBtn}>
           <Ionicons name="trash" size={20} color="#cc0000" />
         </TouchableOpacity>
@@ -169,14 +174,17 @@ export default function ProgramasScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Barra superior de navegación nativa color blanco */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Programas de Estudio</Text>
+        {/* Botón flotante derecho circular '+' */}
         <TouchableOpacity onPress={openCreateModal} style={styles.addButton}>
           <Ionicons name="add-circle" size={36} color="#0066cc" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
+        {/* Input con bordes redondeados */}
         <TextInput
           style={styles.searchBar}
           placeholder="Buscar por código o nombre..."
@@ -184,26 +192,31 @@ export default function ProgramasScreen() {
           onChangeText={handleSearch}
         />
 
+        {/* Componente nativo de lista de alto rendimiento */}
         <FlatList
           data={filteredProgramas}
           keyExtractor={(item) => item.cod}
           renderItem={renderItem}
+          // Mensaje de lista vacía centralizado
           ListEmptyComponent={<Text style={styles.emptyText}>No hay programas registrados</Text>}
           contentContainerStyle={styles.listContainer}
         />
       </View>
 
-      {/* Modal Formulario */}
+      {/* Modal Formulario superpuesto con fondo oscuro */}
       <Modal
-        animationType="slide"
-        transparent={true}
+        animationType="slide" // Animación de entrada de abajo hacia arriba
+        transparent={true} // Obliga a que podamos ver el fondo oscuro translúcido
         visible={modalVisible}
         onRequestClose={clearProgForm}
       >
         <View style={styles.modalOverlay}>
+          {/* Caja Blanca Principal del Formulario */}
           <View style={styles.modalContent}>
+            {/* Título negro centrado */}
             <Text style={styles.modalTitle}>{editingProg ? 'Modificar Programa' : 'Crear Programa'}</Text>
             
+            {/* Input para el Código */}
             <TextInput
               style={[styles.input, editingProg && styles.disabledInput]}
               placeholder="Código (Max 4 chars)"
@@ -212,6 +225,7 @@ export default function ProgramasScreen() {
               editable={!editingProg} 
               maxLength={4}
             />
+            {/* Input para el Nombre */}
             <TextInput
               style={styles.input}
               placeholder="Nombre (Max 30 chars)"
@@ -221,9 +235,11 @@ export default function ProgramasScreen() {
             />
             
             <View style={styles.formRow}>
+              {/* Botón de Guardar en Azul */}
               <TouchableOpacity style={styles.saveBtn} onPress={handleSavePrograma} disabled={!progCod || !progNombre}>
                 <Text style={styles.saveBtnText}>{editingProg ? "Guardar" : "Crear"}</Text>
               </TouchableOpacity>
+              {/* Botón de Cancelar en Rojo */}
               <TouchableOpacity style={styles.cancelBtn} onPress={clearProgForm}>
                 <Text style={styles.cancelBtnText}>Cancelar</Text>
               </TouchableOpacity>
@@ -237,8 +253,11 @@ export default function ProgramasScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Centro horizontal y vertical
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // Fondo base de toda la app
   container: { flex: 1, backgroundColor: '#f5f5f5' },
+  // Barra superior blanca con línea por debajo
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -253,6 +272,7 @@ const styles = StyleSheet.create({
   header: { fontSize: 22, fontWeight: 'bold', color: '#333' },
   addButton: { padding: 4 },
   content: { padding: 16, flex: 1 },
+  // Búsqueda con borde gris
   searchBar: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -263,6 +283,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContainer: { paddingBottom: 20 },
+  // Tarjetas blancas con sombra leve
   listItem: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -284,7 +305,8 @@ const styles = StyleSheet.create({
   actionBtn: { padding: 8, borderRadius: 6, backgroundColor: '#f0f8ff' },
   emptyText: { textAlign: 'center', marginTop: 20, color: '#999', fontSize: 16 },
 
-  // Modal styles
+  // ================== MODAL ==================
+  // Fondo oscuro
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -312,8 +334,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     fontSize: 16,
   },
+  // Bloqueado (solo vista)
   disabledInput: { backgroundColor: '#e9ecef', color: '#6c757d' },
   formRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  // Botones inferiores azules
   saveBtn: {
     backgroundColor: '#0066cc',
     paddingVertical: 12,
@@ -324,6 +348,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  // Botones inferiores rojos
   cancelBtn: {
     backgroundColor: '#cc0000',
     paddingVertical: 12,
